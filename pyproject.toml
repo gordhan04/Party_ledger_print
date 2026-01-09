@@ -5,5 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "customtkinter>=5.2.2",
+    "pillow>=12.1.0",
     "reportlab>=4.4.7",
 ]

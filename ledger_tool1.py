@@ -8,7 +8,7 @@ import os
 class LedgerTool:
     def __init__(self, root):
         self.root = root
-        self.root.title("Ledger Search & Print Tool")
+        self.root.title("Ledger Print Tool by Govardhan Raj")
         self.root.geometry("600x600")
 
         self.ledgers = []
@@ -29,7 +29,7 @@ class LedgerTool:
         # Header
         header_frame = tk.Frame(self.root, pady=10)
         header_frame.pack(fill="x")
-        tk.Label(header_frame, text="Ledger Printing Tool", font=("Arial", 16, "bold")).pack()
+        tk.Label(header_frame, text="Ledger Printing Tool by Govardhan Raj", font=("Arial", 16, "bold")).pack()
         
         btn_frame = tk.Frame(header_frame)
         btn_frame.pack(pady=5)
@@ -259,12 +259,12 @@ class LedgerTool:
         y = height - 100
 
         # 2. Party Name (Center, Size 18)
-        c.setFont("Helvetica-Bold", 18)
+        c.setFont("Helvetica-Bold", 25)
         c.drawCentredString(width / 2, y, details['name'])
         y -= 30 
 
         # 3. Address (Center, Split by comma)
-        c.setFont("Helvetica-Bold", 12)
+        c.setFont("Helvetica-Bold", 18)
         
         raw_address = details['address']
         if raw_address:
