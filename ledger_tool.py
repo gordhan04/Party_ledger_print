@@ -16,7 +16,7 @@ class LedgerTool(ctk.CTk):
         super().__init__()
 
         # Window Setup
-        self.title("Ledger Print Tool")
+        self.title("Ledger Print Tool by G.A.Raj")
         self.geometry("700x750")
         
         # Try to set Window Icon (logo.ico if available for Windows taskbar)
@@ -59,14 +59,14 @@ class LedgerTool(ctk.CTk):
         title_frame = ctk.CTkFrame(self.header_frame, fg_color="transparent")
         title_frame.pack(side="left")
         
-        ctk.CTkLabel(title_frame, text="Ledger Manager", font=("Roboto", 24, "bold")).pack(anchor="w")
-        ctk.CTkLabel(title_frame, text="Printing & Management Suite", font=("Roboto", 12), text_color="gray").pack(anchor="w")
+        ctk.CTkLabel(title_frame, text="Ledger Printer", font=("Roboto", 24, "bold")).pack(anchor="w")
+        ctk.CTkLabel(title_frame, text="By Govardhan Raj", font=("Roboto", 12), text_color="gray").pack(anchor="w")
 
         # Top Buttons
         btn_frame = ctk.CTkFrame(self.header_frame, fg_color="transparent")
         btn_frame.pack(side="right")
         
-        ctk.CTkButton(btn_frame, text="Load JSON", command=self.load_file_dialog, 
+        ctk.CTkButton(btn_frame, text="Load Ledger", command=self.load_file_dialog, 
                       width=100, fg_color="#607D8B", hover_color="#455A64").pack(side="left", padx=5)
         
         ctk.CTkButton(btn_frame, text="+ Create New", command=self.open_create_ledger_window, 
@@ -112,7 +112,7 @@ class LedgerTool(ctk.CTk):
         bottom_frame.grid(row=3, column=0, padx=20, pady=20, sticky="ew")
 
         # Big Print Button
-        self.print_btn = ctk.CTkButton(bottom_frame, text="PRINT LEDGER DETAILS", command=self.print_ledger, 
+        self.print_btn = ctk.CTkButton(bottom_frame, text="PRINT LEDGER ADDRESS", command=self.print_ledger, 
                       height=50, font=("Roboto", 16, "bold"), fg_color="#2CC985", hover_color="#23A06A")
         self.print_btn.pack(fill="x", pady=(0, 20))
 
@@ -128,11 +128,11 @@ class LedgerTool(ctk.CTk):
         self.status_label.pack(side="left")
 
         # Right side Developer Credit
-        dev_label = ctk.CTkLabel(credit_frame, text="Developed by ", font=("Roboto", 11), text_color="gray")
-        dev_label.pack(side="right")
         
         dev_name = ctk.CTkLabel(credit_frame, text="Govardhan Raj", font=("Roboto", 11, "bold"), text_color="#3B8ED0")
         dev_name.pack(side="right")
+        dev_label = ctk.CTkLabel(credit_frame, text="Developed by ", font=("Roboto", 11), text_color="gray")
+        dev_label.pack(side="right")
 
 
     # --- LOGIC METHODS (Mostly unchanged, adapted for CTk) ---
@@ -315,7 +315,7 @@ class LedgerTool(ctk.CTk):
                     c.drawCentredString(width / 2, y, line)
                     y -= 20
         y -= 10
-        
+        c.setFont("Helvetica", 18)
         c.drawCentredString(width / 2, y, f"State: {details['state']}")
         y -= 20
         c.drawCentredString(width / 2, y, f"GSTIN: {details['gstin']}")
@@ -327,25 +327,25 @@ class LedgerTool(ctk.CTk):
         y -= 15
         c.setLineWidth(0.5)
         c.line(50, y+10, width - 50, y+10)
-        y -= 5
+        y -= 8
         
-        c.setFont("Helvetica-Bold", 14)
-        c.drawString(50, y, "From,  MADHUR MILAN SILK")
+        c.setFont("Helvetica-Bold", 18)
+        c.drawString(50, y, "From,  MADHUR MILAN CREATION")
         y -= 20
         
-        c.setFont("Helvetica", 12)
-        c.drawString(50, y, "No.29/1, 2nd floor,Sri Balaji Complex,")
+        c.setFont("Helvetica", 15)
+        c.drawString(50, y, "No.29/1, 3rd floor,Sri Balaji Complex,")
         y -= 15
         c.drawString(50, y, "Appaji rao lane,S.D.D. Road Cross,")
         y -= 15
         c.drawString(50, y, "BENGALURU-560002")
         y -= 25
         
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(50, y, "GSTIN:- 29AGJPR1392P1ZH   PH: 080-41144941")
+        c.setFont("Helvetica-Bold", 15)
+        c.drawString(50, y, "GSTIN:- 29GVIPS4348G1ZX   PH: 080-41144949")
 
         c.save()
-        messagebox.showinfo("Printed", f"PDF saved as: {pdf_file}")
+        # messagebox.showinfo("Printed", f"PDF saved as: {pdf_file}")
         try:
             os.startfile(pdf_file)
         except:

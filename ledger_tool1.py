@@ -1,74 +1,126 @@
 import json
 import tkinter as tk
 from tkinter import messagebox, filedialog, simpledialog
+import customtkinter as ctk 
+from PIL import Image, ImageTk 
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 import os
 
-class LedgerTool:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Ledger Print Tool by Govardhan Raj")
-        self.root.geometry("600x600")
+# --- CONFIGURATION ---
+ctk.set_appearance_mode("System")
+ctk.set_default_color_theme("blue")
 
+class LedgerTool(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+
+        # Window Setup
+        self.title("Ledger Print Tool by G.A.Raj")
+        self.geometry("700x750")
+        
+        if os.path.exists("logo.ico"):
+            self.iconbitmap("logo.ico")
+
+        # Data Storage
         self.ledgers = []
         self.filtered_ledgers = []
-        self.raw_data = {} # To store full JSON structure for saving
+        self.raw_data = {} 
+        self.file_path = "Master.json"
 
-        # UI Layout
+        # Layout Configuration
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(2, weight=1)
+
+        # Build UI
         self.setup_ui()
         
-        # Load Data automatically if file exists
-        self.file_path = "Master.json"
+        # Load Data
         if os.path.exists(self.file_path):
             self.load_data(self.file_path)
         else:
             self.load_file_dialog()
 
-    def setup_ui(self):
-        # Header
-        header_frame = tk.Frame(self.root, pady=10)
-        header_frame.pack(fill="x")
-        tk.Label(header_frame, text="Ledger Printing Tool by Govardhan Raj", font=("Arial", 16, "bold")).pack()
-        
-        btn_frame = tk.Frame(header_frame)
-        btn_frame.pack(pady=5)
-        tk.Button(btn_frame, text="Load JSON File", command=self.load_file_dialog, bg="#e1e1e1").pack(side="left", padx=5)
-        tk.Button(btn_frame, text="+ Create New Ledger", command=self.open_create_ledger_window, bg="#2196F3", fg="white").pack(side="left", padx=5)
+        # --- FIX 1: Auto-Focus Search Bar on Startup ---
+        # We use .after(200) to ensure the window is fully loaded before setting focus
+        self.after(200, lambda: self.search_entry.focus_set())
 
-        # Search Bar
-        search_frame = tk.Frame(self.root, pady=5, padx=10)
-        search_frame.pack(fill="x")
-        tk.Label(search_frame, text="Search Ledger:", font=("Arial", 10)).pack(anchor="w")
+    def setup_ui(self):
+        # --- 1. HEADER & LOGO ---
+        self.header_frame = ctk.CTkFrame(self, corner_radius=10, fg_color="transparent")
+        self.header_frame.grid(row=0, column=0, padx=20, pady=(20, 10), sticky="ew")
+
+        if os.path.exists("logo.png"):
+            img = Image.open("logo.png")
+            self.logo_image = ctk.CTkImage(light_image=img, dark_image=img, size=(50, 50))
+            self.logo_label = ctk.CTkLabel(self.header_frame, image=self.logo_image, text="")
+            self.logo_label.pack(side="left", padx=(0, 15))
+        
+        title_frame = ctk.CTkFrame(self.header_frame, fg_color="transparent")
+        title_frame.pack(side="left")
+        ctk.CTkLabel(title_frame, text="Ledger Address Print", font=("Roboto", 24, "bold")).pack(anchor="w")
+        ctk.CTkLabel(title_frame, text="Devloped by Govardhan Raj ", font=("Roboto", 12), text_color="gray").pack(anchor="w")
+
+        btn_frame = ctk.CTkFrame(self.header_frame, fg_color="transparent")
+        btn_frame.pack(side="right")
+        ctk.CTkButton(btn_frame, text="Load JSON", command=self.load_file_dialog, 
+                      width=100, fg_color="#607D8B", hover_color="#455A64").pack(side="left", padx=5)
+        ctk.CTkButton(btn_frame, text="+ Create New", command=self.open_create_ledger_window, 
+                      width=100).pack(side="left", padx=5)
+
+        # --- 2. SEARCH BAR ---
+        self.search_frame = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        self.search_frame.grid(row=1, column=0, padx=20, pady=5, sticky="ew")
         
         self.search_var = tk.StringVar()
         self.search_var.trace("w", self.update_list)
-        self.search_entry = tk.Entry(search_frame, textvariable=self.search_var, font=("Arial", 12))
-        self.search_entry.pack(fill="x", pady=5)
         
-        # Key Bindings for Navigation
+        self.search_entry = ctk.CTkEntry(self.search_frame, textvariable=self.search_var, 
+                                         placeholder_text="🔍 Search Ledger Name...", 
+                                         height=40, font=("Roboto", 14))
+        self.search_entry.pack(fill="x")
+        
         self.search_entry.bind("<Down>", self.focus_listbox)
         self.search_entry.bind("<Return>", self.print_ledger)
 
-        # Listbox
-        list_frame = tk.Frame(self.root, padx=10, pady=5)
-        list_frame.pack(fill="both", expand=True)
+        # --- 3. LISTBOX AREA ---
+        list_frame = ctk.CTkFrame(self, corner_radius=10)
+        list_frame.grid(row=2, column=0, padx=20, pady=10, sticky="nsew")
         
-        self.ledger_listbox = tk.Listbox(list_frame, font=("Arial", 11), height=15)
-        self.ledger_listbox.pack(side="left", fill="both", expand=True)
-        
-        scrollbar = tk.Scrollbar(list_frame, orient="vertical", command=self.ledger_listbox.yview)
-        scrollbar.pack(side="right", fill="y")
+        self.ledger_listbox = tk.Listbox(list_frame, font=("Consolas", 12), 
+                                         bg="#2b2b2b", fg="white", 
+                                         selectbackground="#1f538d", selectforeground="white",
+                                         borderwidth=0, highlightthickness=0,
+                                         activestyle="none")
+        self.ledger_listbox.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+
+        scrollbar = ctk.CTkScrollbar(list_frame, command=self.ledger_listbox.yview)
+        scrollbar.pack(side="right", fill="y", padx=(0,5), pady=5)
         self.ledger_listbox.config(yscrollcommand=scrollbar.set)
         
-        # Listbox Bindings
         self.ledger_listbox.bind("<Return>", self.print_ledger)
 
-        # Print Button
-        btn_frame = tk.Frame(self.root, pady=15)
-        btn_frame.pack(fill="x")
-        tk.Button(btn_frame, text="PRINT LEDGER (Enter)", command=self.print_ledger, 
-                  bg="#4CAF50", fg="white", font=("Arial", 12, "bold"), height=2).pack(fill="x", padx=20)
+        # --- 4. ACTION & FOOTER ---
+        bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
+        bottom_frame.grid(row=3, column=0, padx=20, pady=20, sticky="ew")
+
+        self.print_btn = ctk.CTkButton(bottom_frame, text="PRINT", command=self.print_ledger, 
+                      height=50, font=("Roboto", 16, "bold"), fg_color="#2CC985", hover_color="#23A06A")
+        self.print_btn.pack(fill="x", pady=(0, 20))
+
+        footer_line = ctk.CTkFrame(bottom_frame, height=2, fg_color="#333333")
+        footer_line.pack(fill="x", pady=10)
+        
+        credit_frame = ctk.CTkFrame(bottom_frame, fg_color="transparent")
+        credit_frame.pack(fill="x")
+        
+        self.status_label = ctk.CTkLabel(credit_frame, text="Ready", text_color="gray", font=("Roboto", 10))
+        self.status_label.pack(side="left")
+
+        dev_name = ctk.CTkLabel(credit_frame, text="Govardhan Raj", font=("Roboto", 11, "bold"), text_color="#3B8ED0")
+        dev_name.pack(side="right")
+        dev_label = ctk.CTkLabel(credit_frame, text="Developed by ", font=("Roboto", 11), text_color="gray")
+        dev_label.pack(side="right")
 
     def focus_listbox(self, event):
         self.ledger_listbox.focus_set()
@@ -84,7 +136,6 @@ class LedgerTool:
 
     def load_data(self, path):
         data = None
-        # Try UTF-16 (Tally default) then UTF-8
         try:
             with open(path, 'r', encoding='utf-16') as f:
                 data = json.load(f)
@@ -93,12 +144,13 @@ class LedgerTool:
                 with open(path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
             except Exception as e:
-                messagebox.showerror("Error", f"Could not read file encoding: {e}")
+                messagebox.showerror("Error", f"Could not read file: {e}")
                 return
 
         if data:
-            self.raw_data = data # Store raw data for saving later
+            self.raw_data = data 
             self.process_json_data(data)
+            self.status_label.configure(text=f"Loaded: {os.path.basename(path)}")
 
     def process_json_data(self, data):
         try:
@@ -115,9 +167,8 @@ class LedgerTool:
             
             self.ledgers.sort(key=lambda x: x["name"])
             self.update_list()
-            # No message box here to avoid annoyance on restart
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to parse JSON structure: {e}")
+            messagebox.showerror("Error", f"JSON Parse Error: {e}")
 
     def update_list(self, *args):
         search_term = self.search_var.get().lower()
@@ -127,9 +178,8 @@ class LedgerTool:
         for l in self.ledgers:
             if search_term in l["name"].lower():
                 self.filtered_ledgers.append(l)
-                self.ledger_listbox.insert(tk.END, l["name"])
+                self.ledger_listbox.insert(tk.END, f" {l['name']}") 
         
-        # Auto-select first item if search matches
         if self.filtered_ledgers:
             self.ledger_listbox.selection_set(0)
 
@@ -141,7 +191,6 @@ class LedgerTool:
         details['state'] = "N/A"
         details['mobile'] = ledger_data.get('ledgermobile', 'N/A')
         
-        # Extract Address & State
         if 'ledmailingdetails' in ledger_data:
             mail_info = ledger_data['ledmailingdetails']
             if isinstance(mail_info, list) and len(mail_info) > 0:
@@ -157,115 +206,102 @@ class LedgerTool:
         
         return details
 
-    # --- CREATE NEW LEDGER FUNCTIONALITY ---
     def open_create_ledger_window(self):
-        top = tk.Toplevel(self.root)
+        top = ctk.CTkToplevel(self)
         top.title("Create New Ledger")
-        top.geometry("400x450")
+        top.geometry("450x550")
         
-        tk.Label(top, text="Party Name:").pack(pady=2)
-        entry_name = tk.Entry(top, width=40)
-        entry_name.pack(pady=2)
+        # --- FIX 2: Ensure Window stays on top ---
+        top.attributes("-topmost", True) 
+        top.lift()
+        top.focus_force()
 
-        tk.Label(top, text="Address (comma for new line):").pack(pady=2)
-        entry_address = tk.Entry(top, width=40)
-        entry_address.pack(pady=2)
+        form_frame = ctk.CTkFrame(top)
+        form_frame.pack(padx=20, pady=20, fill="both", expand=True)
 
-        tk.Label(top, text="State:").pack(pady=2)
-        entry_state = tk.Entry(top, width=40)
-        entry_state.pack(pady=2)
+        ctk.CTkLabel(form_frame, text="Create New Ledger", font=("Roboto", 18, "bold")).pack(pady=10)
 
-        tk.Label(top, text="GSTIN:").pack(pady=2)
-        entry_gst = tk.Entry(top, width=40)
-        entry_gst.pack(pady=2)
-
-        tk.Label(top, text="Mobile:").pack(pady=2)
-        entry_mobile = tk.Entry(top, width=40)
-        entry_mobile.pack(pady=2)
+        fields = {}
+        labels = ["Party Name", "Address (comma separated)", "State", "GSTIN", "Mobile"]
+        
+        for label in labels:
+            ctk.CTkLabel(form_frame, text=label + ":", anchor="w").pack(fill="x", padx=20, pady=(5,0))
+            entry = ctk.CTkEntry(form_frame)
+            entry.pack(fill="x", padx=20, pady=(0,5))
+            fields[label] = entry
 
         def save_new():
-            name = entry_name.get()
+            name = fields["Party Name"].get()
             if not name:
+                # Temporarily disable topmost so the message box appears correctly above it
+                top.attributes("-topmost", False)
                 messagebox.showwarning("Error", "Name is required")
+                top.attributes("-topmost", True)
                 return
-            
-            # Construct JSON Object compatible with existing Tally logic
-            address_parts = entry_address.get().split(',')
             
             new_ledger = {
                 "metadata": { "type": "Ledger", "name": name },
-                "ledgermobile": entry_mobile.get(),
+                "ledgermobile": fields["Mobile"].get(),
                 "ledmailingdetails": [{
-                    "address": address_parts,
-                    "state": entry_state.get()
+                    "address": fields["Address (comma separated)"].get().split(','),
+                    "state": fields["State"].get()
                 }],
                 "ledgstregdetails": [{
-                    "gstin": entry_gst.get()
+                    "gstin": fields["GSTIN"].get()
                 }]
             }
 
-            # Update Internal Data
             if "tallymessage" not in self.raw_data:
                 self.raw_data["tallymessage"] = []
-                
+            
             self.raw_data["tallymessage"].append(new_ledger)
             
-            # Save to File
             try:
-                # Save as UTF-8 so Python reads it easily next time
                 with open(self.file_path, 'w', encoding='utf-8') as f:
                     json.dump(self.raw_data, f, indent=4)
                 
-                # Reload UI
                 self.process_json_data(self.raw_data)
+                
+                # Handle message box with topmost window
+                top.attributes("-topmost", False)
                 messagebox.showinfo("Success", "New Ledger Saved!")
                 top.destroy()
             except Exception as e:
+                top.attributes("-topmost", False)
                 messagebox.showerror("Error", f"Failed to save file: {e}")
+                top.attributes("-topmost", True)
 
-        tk.Button(top, text="SAVE LEDGER", command=save_new, bg="#2196F3", fg="white").pack(pady=20)
+        ctk.CTkButton(form_frame, text="SAVE LEDGER", command=save_new, height=40).pack(pady=20, padx=20, fill="x")
 
-    # --- PRINTING FUNCTIONALITY ---
     def print_ledger(self, event=None):
         selection = self.ledger_listbox.curselection()
         if not selection:
             messagebox.showwarning("Select Ledger", "Please select a ledger to print.")
             return
 
-        # 1. Ask for Packing Note Number
-        note_number = simpledialog.askstring("Input", "Enter Packing Note Number:")
-        if note_number is None: return # User cancelled
+        note_number = simpledialog.askstring("Packing Note", "Enter Packing Note Number:")
+        if note_number is None: return 
         packing_note_text = f"Packing Note: {note_number}"
 
         index = selection[0]
         selected_item = self.filtered_ledgers[index]
         details = self.get_ledger_details(selected_item['data'])
 
-        # PDF Setup
         pdf_file = f"{details['name']}_Ledger.pdf".replace("/", "_").replace("\\", "_")
         c = canvas.Canvas(pdf_file, pagesize=A4)
         width, height = A4
         
-        # ================== CENTERED SECTION ==================
-        
-        # 1. Packing Note (Center, Size 18) - Updated with User Input
         c.setFont("Helvetica-Bold", 18)
         c.drawCentredString(width / 2, height - 50, packing_note_text)
-        
-        # Divider Line
         c.setLineWidth(1)
         c.line(50, height - 65, width - 50, height - 65)
 
         y = height - 100
-
-        # 2. Party Name (Center, Size 18)
         c.setFont("Helvetica-Bold", 25)
         c.drawCentredString(width / 2, y, details['name'])
         y -= 30 
 
-        # 3. Address (Center, Split by comma)
         c.setFont("Helvetica-Bold", 18)
-        
         raw_address = details['address']
         if raw_address:
             address_lines = [line.strip() for line in raw_address.split(',')]
@@ -273,10 +309,8 @@ class LedgerTool:
                 if line:
                     c.drawCentredString(width / 2, y, line)
                     y -= 20
-        
         y -= 10
-        
-        # State, GSTIN, Mobile (Center)
+        c.setFont("Helvetica", 18)
         c.drawCentredString(width / 2, y, f"State: {details['state']}")
         y -= 20
         c.drawCentredString(width / 2, y, f"GSTIN: {details['gstin']}")
@@ -285,38 +319,33 @@ class LedgerTool:
              c.drawCentredString(width / 2, y, f"Mobile: {details['mobile']}")
              y -= 20
 
-        # ================== LEFT ALIGNED SECTION ==================
-        
-        y -= 15 # Add spacing before the Sender Details
-        
-        # Draw Divider Line
+        y -= 15
         c.setLineWidth(0.5)
         c.line(50, y+10, width - 50, y+10)
-        y -= 5
+        y -= 8
         
-        c.setFont("Helvetica-Bold", 14)
+        c.setFont("Helvetica-Bold", 20)
         c.drawString(50, y, "From,  MADHUR MILAN SILK")
         y -= 20
         
-        c.setFont("Helvetica", 12)
+        c.setFont("Helvetica", 18)
         c.drawString(50, y, "No.29/1, 2nd floor,Sri Balaji Complex,")
-        y -= 15
+        y -= 20
         c.drawString(50, y, "Appaji rao lane,S.D.D. Road Cross,")
-        y -= 15
+        y -= 20
         c.drawString(50, y, "BENGALURU-560002")
         y -= 25
         
-        c.setFont("Helvetica-Bold", 12)
+        c.setFont("Helvetica-Bold", 18)
         c.drawString(50, y, "GSTIN:- 29AGJPR1392P1ZH   PH: 080-41144941")
 
         c.save()
-        messagebox.showinfo("Printed", f"PDF saved as: {pdf_file}")
+        # messagebox.showinfo("Printed", f"PDF saved as: {pdf_file}")
         try:
             os.startfile(pdf_file)
         except:
             pass
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = LedgerTool(root)
-    root.mainloop()
+    app = LedgerTool()
+    app.mainloop()
