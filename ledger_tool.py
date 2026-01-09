@@ -162,7 +162,7 @@ class LedgerTool(ctk.CTk):
                         ledger_obj = item
                         name = item["metadata"].get("name", "Unknown")
                         self.ledgers.append({
-                            "name": name,
+                            "name": name.upper(),
                             "data": ledger_obj
                         })
             
@@ -302,11 +302,11 @@ class LedgerTool(ctk.CTk):
 
         y = height - 100
         c.setFont("Helvetica-Bold", 25)
-        c.drawCentredString(width / 2, y, details['name'])
+        c.drawCentredString(width / 2, y, details['name'].upper())
         y -= 30 
 
-        c.setFont("Helvetica-Bold", 18)
-        raw_address = details['address']
+        c.setFont("Helvetica-Bold", 22)
+        raw_address = details['address'].upper()
         if raw_address:
             address_lines = [line.strip() for line in raw_address.split(',')]
             for line in address_lines:
