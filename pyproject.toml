@@ -7,5 +7,6 @@ requires-python = ">=3.13"
 dependencies = [
     "customtkinter>=5.2.2",
     "pillow>=12.1.0",
+    "pyinstaller>=6.17.0",
     "reportlab>=4.4.7",
 ]
