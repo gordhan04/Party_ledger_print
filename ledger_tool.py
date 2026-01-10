@@ -7,6 +7,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 import os
 import tempfile
+import textwrap
 
 # --- CONFIGURATION ---
 ctk.set_appearance_mode("System")
@@ -301,10 +302,25 @@ class LedgerTool(ctk.CTk):
         c.line(50, height - 65, width - 50, height - 65)
 
         y = height - 100
+        # 1. Party Name (Auto-Multi-line if too long)
         c.setFont("Helvetica-Bold", 25)
-        c.drawCentredString(width / 2, y, details['name'].upper())
-        y -= 30 
-
+        name_text = details['name'].upper()
+        
+        # Split name if it is longer than 30 characters
+        wrapped_name = textwrap.wrap(name_text, width=30)
+        
+        for line in wrapped_name:
+            c.drawCentredString(width / 2, y, line)
+            y -= 30  # Move down for the next line
+            
+        # # Add a little extra space after the name finishes
+        # y -= 10 
+        
+        # # Divider Line
+        # c.setLineWidth(.25)
+        # c.line(50, y, width - 50, y)
+        
+        # y -= 40
         c.setFont("Helvetica-Bold", 22)
         raw_address = details['address'].upper()
         if raw_address:
@@ -319,9 +335,9 @@ class LedgerTool(ctk.CTk):
         y -= 20
         c.drawCentredString(width / 2, y, f"GSTIN: {details['gstin']}")
         y -= 20
-        if details['mobile'] and details['mobile'] != 'N/A':
-             c.drawCentredString(width / 2, y, f"Mobile: {details['mobile']}")
-             y -= 20
+        # if details['mobile'] and details['mobile'] != 'N/A':
+        #      c.drawCentredString(width / 2, y, f"Mobile: {details['mobile']}")
+        #      y -= 20
 
         y -= 15
         c.setLineWidth(0.5)

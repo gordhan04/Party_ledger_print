@@ -1,0 +1,1 @@
+when party name is larger than a limit name not printing fully it is cutting
